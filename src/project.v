@@ -6,7 +6,7 @@
 
 `default_nettype none
 
-module tt_um_example (
+module tt_um_alu_jzamora (
     input  wire [7:0] ui_in,    // PORT_A (dato)
     output wire [7:0] uo_out,   // Acumulador / resultado
     input  wire [7:0] uio_in,   // PORT_B (control)
