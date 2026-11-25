@@ -3,7 +3,7 @@ project:
   title:        "ALU de 8 bits con acumulador"
   author:       "JAIME ZAMORA"
   discord:      ""
-  description:  "ALU de 8 bits con acumulador: carga, suma, suma con acarreo, NOT, AND, OR, XOR y desplazamientos"
+  description:  "ALU de 8 bits con acumulador"
   language:     "Verilog"
   clock_hz:     10000000
 
