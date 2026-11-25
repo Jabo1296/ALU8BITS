@@ -40,10 +40,10 @@ pinout:
   uio[1]: "S1"
   uio[2]: "S2"
   uio[3]: "S3"
-  uio[4]: "CIN"
+  uio[4]: "S4"
   uio[5]: "COUT"
   uio[6]: "Z"
-  uio[7]: ""
+  uio[7]: "CIN"
 
 # Do not change!
 yaml_version: 6
