@@ -36,13 +36,13 @@ pinout:
   uo[7]: "ACC[7]"
 
   # Bidirectional pins
-  uio[0]: "S0 (entrada)"
-  uio[1]: "S1 (entrada)"
-  uio[2]: "S2 (entrada)"
-  uio[3]: "S3 (entrada)"
-  uio[4]: "CIN (entrada)"
-  uio[5]: "COUT (salida)"
-  uio[6]: "Z (salida)"
+  uio[0]: "S0"
+  uio[1]: "S1"
+  uio[2]: "S2"
+  uio[3]: "S3"
+  uio[4]: "CIN"
+  uio[5]: "COUT"
+  uio[6]: "Z"
   uio[7]: ""
 
 # Do not change!
