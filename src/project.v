@@ -17,36 +17,74 @@ module tt_um_alu_jzamora (
     input  wire       rst_n
 );
 
- reg  [7:0] ACC;
+  reg  [7:0] ACC;
   reg  [7:0] RES;
+  reg  [7:0] ZV;
   reg        C;
+  reg        FLAG_ONLY;
   reg        COUT;
   reg        Z;
 
   wire [7:0] PORT_A = ui_in;
-  wire [3:0] S      = uio_in[3:0];
+  wire [4:0] SEL    = {uio_in[7], uio_in[3:0]};
   wire       CIN    = uio_in[4];
+  wire [7:0] MUL4   = ACC[3:0] * PORT_A[3:0];
 
   always @(*) begin
-    case (S)
-      4'b0000: {C, RES} = {1'b0, PORT_A};                     // CARGA
-      4'b0001: {C, RES} = ACC + PORT_A;                       // ADD
-      4'b0010: {C, RES} = ACC + PORT_A + CIN;                 // ADC
-      4'b0011: {C, RES} = {1'b0, ~ACC};                       // NOT
-      4'b0100: {C, RES} = {1'b0, ACC & PORT_A};               // AND
-      4'b0101: {C, RES} = {1'b0, ACC | PORT_A};               // OR
-      4'b0110: {C, RES} = {1'b0, ACC ^ PORT_A};               // XOR
-      4'b0111: {C, RES} = {ACC[7], ACC[6:0], 1'b0};           // LSL
-      4'b1000: {C, RES} = {ACC[0], 1'b0, ACC[7:1]};           // LSR
-      4'b1001: {C, RES} = {1'b0, ACC} - {1'b0, PORT_A};       // SUB
-      4'b1010: {C, RES} = {1'b0, ACC} + 9'd1;                 // INC
-      4'b1011: {C, RES} = {1'b0, ACC} - 9'd1;                 // DEC
-      4'b1100: {C, RES} = {ACC[7], ACC[6:0], CIN};            // ROL con CIN
-      4'b1101: {C, RES} = {ACC[0], CIN, ACC[7:1]};            // ROR con CIN
-      4'b1110: {C, RES} = PORT_A + {3'b000, uio_in[4:0]};     // Suma directa (test)
-      4'b1111: {C, RES} = 9'd0 - {1'b0, ACC};                 // NEG
-      default: {C, RES} = 9'b0;
+    C         = 1'b0;
+    RES       = 8'b0;
+    ZV        = 8'b0;
+    FLAG_ONLY = 1'b0;
+
+    case (SEL)
+      // Banco 0 (uio[7] = 0)
+      5'b00000: {C, RES} = {1'b0, PORT_A};                              // CARGA
+      5'b00001: {C, RES} = ACC + PORT_A;                                // ADD
+      5'b00010: {C, RES} = ACC + PORT_A + CIN;                          // ADC
+      5'b00011: {C, RES} = {1'b0, ~ACC};                                // NOT
+      5'b00100: {C, RES} = {1'b0, ACC & PORT_A};                        // AND
+      5'b00101: {C, RES} = {1'b0, ACC | PORT_A};                        // OR
+      5'b00110: {C, RES} = {1'b0, ACC ^ PORT_A};                        // XOR
+      5'b00111: {C, RES} = {ACC[7], ACC[6:0], 1'b0};                    // LSL
+      5'b01000: {C, RES} = {ACC[0], 1'b0, ACC[7:1]};                    // LSR
+      5'b01001: {C, RES} = {1'b0, ACC} - {1'b0, PORT_A};                // SUB
+      5'b01010: {C, RES} = {1'b0, ACC} + 9'd1;                          // INC
+      5'b01011: {C, RES} = {1'b0, ACC} - 9'd1;                          // DEC
+      5'b01100: {C, RES} = {ACC[7], ACC[6:0], CIN};                     // ROL
+      5'b01101: {C, RES} = {ACC[0], CIN, ACC[7:1]};                     // ROR
+      5'b01110: {C, RES} = PORT_A + {3'b000, uio_in[4:0]};              // Suma directa (test)
+      5'b01111: {C, RES} = 9'd0 - {1'b0, ACC};                          // NEG
+
+      // Banco 1 (uio[7] = 1)
+      5'b10000: {C, RES} = {1'b0, ~(ACC & PORT_A)};                     // NAND
+      5'b10001: {C, RES} = {1'b0, ~(ACC | PORT_A)};                     // NOR
+      5'b10010: {C, RES} = {1'b0, ~(ACC ^ PORT_A)};                     // XNOR
+      5'b10011: {C, RES} = {ACC[0], ACC[7], ACC[7:1]};                  // ASR
+      5'b10100: {C, RES} = {1'b0, ACC[3:0], ACC[7:4]};                  // SWAP nibbles
+      5'b10101: {C, RES} = 9'd0;                                        // CLR
+      5'b10110: {C, RES} = 9'h0FF;                                      // SET
+      5'b10111: begin                                                   // CMP (solo banderas)
+                  {C, ZV}   = {1'b0, ACC} - {1'b0, PORT_A};
+                  RES       = ACC;
+                  FLAG_ONLY = 1'b1;
+                end
+      5'b11000: {C, RES} = {1'b0, PORT_A} - {1'b0, ACC};                // RSUB
+      5'b11001: {C, RES} = {1'b0, ACC} - {1'b0, PORT_A} - {8'b0, CIN};  // SBC
+      5'b11010: {C, RES} = {1'b0, ACC & ~PORT_A};                       // BIC
+      5'b11011: {C, RES} = {1'b0, ACC[0], ACC[1], ACC[2], ACC[3],
+                                  ACC[4], ACC[5], ACC[6], ACC[7]};      // REV bits
+      5'b11100: begin                                                   // TST (solo banderas)
+                  ZV        = ACC & PORT_A;
+                  RES       = ACC;
+                  FLAG_ONLY = 1'b1;
+                end
+      5'b11101: {C, RES} = {1'b0, MUL4};                                // MUL 4x4
+      5'b11110: {C, RES} = {1'b0, (ACC > PORT_A) ? ACC : PORT_A};       // MAX
+      5'b11111: {C, RES} = {1'b0, (ACC < PORT_A) ? ACC : PORT_A};       // MIN
+      default:  {C, RES} = 9'd0;
     endcase
+
+    if (!FLAG_ONLY) ZV = RES;
   end
 
   always @(posedge clk or negedge rst_n) begin
@@ -57,14 +95,14 @@ module tt_um_alu_jzamora (
     end else begin
       ACC  <= RES;
       COUT <= C;
-      Z    <= (RES == 8'b0);
+      Z    <= (ZV == 8'b0);
     end
   end
 
-  assign uo_out  = (S == 4'b1110) ? RES : ACC;
+  assign uo_out  = (SEL == 5'b01110) ? RES : ACC;
   assign uio_out = {1'b0, Z, COUT, 5'b00000};
   assign uio_oe  = 8'b01100000;
 
-  wire _unused = &{ena, uio_in[7:5], 1'b0};
+  wire _unused = &{ena, uio_in[6:5], 1'b0};
 
 endmodule
