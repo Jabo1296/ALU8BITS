@@ -17,7 +17,7 @@ module tt_um_alu_jzamora (
     input  wire       rst_n
 );
 
-  reg  [7:0] ACC;
+ reg  [7:0] ACC;
   reg  [7:0] RES;
   reg        C;
   reg        COUT;
@@ -29,16 +29,22 @@ module tt_um_alu_jzamora (
 
   always @(*) begin
     case (S)
-      4'b0000: {C, RES} = {1'b0, PORT_A};
-      4'b0001: {C, RES} = ACC + PORT_A;
-      4'b0010: {C, RES} = ACC + PORT_A + CIN;
-      4'b0011: {C, RES} = {1'b0, ~ACC};
-      4'b0100: {C, RES} = {1'b0, ACC & PORT_A};
-      4'b0101: {C, RES} = {1'b0, ACC | PORT_A};
-      4'b0110: {C, RES} = {1'b0, ACC ^ PORT_A};
-      4'b0111: {C, RES} = {ACC[7], ACC[6:0], 1'b0};
-      4'b1000: {C, RES} = {ACC[0], 1'b0, ACC[7:1]};
-      4'b1110: {C, RES} = PORT_A + {3'b000, uio_in[4:0]};  // Suma directa de puertos
+      4'b0000: {C, RES} = {1'b0, PORT_A};                     // CARGA
+      4'b0001: {C, RES} = ACC + PORT_A;                       // ADD
+      4'b0010: {C, RES} = ACC + PORT_A + CIN;                 // ADC
+      4'b0011: {C, RES} = {1'b0, ~ACC};                       // NOT
+      4'b0100: {C, RES} = {1'b0, ACC & PORT_A};               // AND
+      4'b0101: {C, RES} = {1'b0, ACC | PORT_A};               // OR
+      4'b0110: {C, RES} = {1'b0, ACC ^ PORT_A};               // XOR
+      4'b0111: {C, RES} = {ACC[7], ACC[6:0], 1'b0};           // LSL
+      4'b1000: {C, RES} = {ACC[0], 1'b0, ACC[7:1]};           // LSR
+      4'b1001: {C, RES} = {1'b0, ACC} - {1'b0, PORT_A};       // SUB
+      4'b1010: {C, RES} = {1'b0, ACC} + 9'd1;                 // INC
+      4'b1011: {C, RES} = {1'b0, ACC} - 9'd1;                 // DEC
+      4'b1100: {C, RES} = {ACC[7], ACC[6:0], CIN};            // ROL con CIN
+      4'b1101: {C, RES} = {ACC[0], CIN, ACC[7:1]};            // ROR con CIN
+      4'b1110: {C, RES} = PORT_A + {3'b000, uio_in[4:0]};     // Suma directa (test)
+      4'b1111: {C, RES} = 9'd0 - {1'b0, ACC};                 // NEG
       default: {C, RES} = 9'b0;
     endcase
   end
@@ -55,11 +61,10 @@ module tt_um_alu_jzamora (
     end
   end
 
-  // En la operacion 1110 la salida es combinacional, en las demas es el acumulador
   assign uo_out  = (S == 4'b1110) ? RES : ACC;
   assign uio_out = {1'b0, Z, COUT, 5'b00000};
   assign uio_oe  = 8'b01100000;
 
-  wire _unused = &{ena, 1'b0};
+  wire _unused = &{ena, uio_in[7:5], 1'b0};
 
 endmodule
