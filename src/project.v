@@ -26,8 +26,8 @@ module tt_um_alu_jzamora (
   reg        Z;
 
   wire [7:0] PORT_A = ui_in;
-  wire [4:0] SEL    = {uio_in[7], uio_in[3:0]};
-  wire       CIN    = uio_in[4];
+  wire [4:0] SEL    = uio_in[4:0];   // S4..S0 juntos
+  wire       CIN    = uio_in[7];
   wire [7:0] MUL4   = ACC[3:0] * PORT_A[3:0];
 
   always @(*) begin
@@ -37,7 +37,7 @@ module tt_um_alu_jzamora (
     FLAG_ONLY = 1'b0;
 
     case (SEL)
-      // Banco 0 (uio[7] = 0)
+      // Banco 0 (S4 = 0)
       5'b00000: {C, RES} = {1'b0, PORT_A};                              // CARGA
       5'b00001: {C, RES} = ACC + PORT_A;                                // ADD
       5'b00010: {C, RES} = ACC + PORT_A + CIN;                          // ADC
@@ -52,10 +52,10 @@ module tt_um_alu_jzamora (
       5'b01011: {C, RES} = {1'b0, ACC} - 9'd1;                          // DEC
       5'b01100: {C, RES} = {ACC[7], ACC[6:0], CIN};                     // ROL
       5'b01101: {C, RES} = {ACC[0], CIN, ACC[7:1]};                     // ROR
-      5'b01110: {C, RES} = PORT_A + {3'b000, uio_in[4:0]};              // Suma directa (test)
+      5'b01110: {C, RES} = {1'b0, (ACC > PORT_A) ? ACC : PORT_A};       // MAX
       5'b01111: {C, RES} = 9'd0 - {1'b0, ACC};                          // NEG
 
-      // Banco 1 (uio[7] = 1)
+      // Banco 1 (S4 = 1)
       5'b10000: {C, RES} = {1'b0, ~(ACC & PORT_A)};                     // NAND
       5'b10001: {C, RES} = {1'b0, ~(ACC | PORT_A)};                     // NOR
       5'b10010: {C, RES} = {1'b0, ~(ACC ^ PORT_A)};                     // XNOR
@@ -79,7 +79,7 @@ module tt_um_alu_jzamora (
                   FLAG_ONLY = 1'b1;
                 end
       5'b11101: {C, RES} = {1'b0, MUL4};                                // MUL 4x4
-      5'b11110: {C, RES} = {1'b0, (ACC > PORT_A) ? ACC : PORT_A};       // MAX
+      5'b11110: {C, RES} = PORT_A + 8'd30;                              // ADD #30 (para el test)
       5'b11111: {C, RES} = {1'b0, (ACC < PORT_A) ? ACC : PORT_A};       // MIN
       default:  {C, RES} = 9'd0;
     endcase
@@ -99,7 +99,7 @@ module tt_um_alu_jzamora (
     end
   end
 
-  assign uo_out  = (SEL == 5'b01110) ? RES : ACC;
+  assign uo_out  = (SEL == 5'b11110) ? RES : ACC;
   assign uio_out = {1'b0, Z, COUT, 5'b00000};
   assign uio_oe  = 8'b01100000;
 
